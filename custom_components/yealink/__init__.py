@@ -109,8 +109,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: YealinkConfigEntry) -> b
 
     async def handle_webhook(hass: HomeAssistant, webhook_id: str, request: web.Request) -> web.Response:
         event = request.query.get("event", "")
+        _LOGGER.debug("Webhook hit from %s: %s", request.remote, dict(request.query))
         if event not in PHONE_EVENTS:
-            _LOGGER.warning("Ignoring unknown phone event %r", event)
+            _LOGGER.warning("Ignoring unknown phone event %r from %s (query: %s)",
+                            event, request.remote, dict(request.query))
             return web.Response(status=400)
         phone.handle_event(event, request.query.get("from"), request.query.get("name"))
         return web.Response(status=200)
@@ -121,6 +123,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: YealinkConfigEntry) -> b
         allowed_methods={"GET", "POST"}, local_only=True,
     )
     entry.async_on_unload(lambda: webhook.async_unregister(hass, webhook_id))
+    _LOGGER.debug("Listening for phone events on /api/webhook/%s", webhook_id)
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     _notify_action_urls(hass, entry)

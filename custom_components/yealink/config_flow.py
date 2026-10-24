@@ -1,6 +1,7 @@
 """Config flow: host + phone web UI credentials."""
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 import voluptuous as vol
@@ -12,6 +13,8 @@ from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
 from .const import CONF_PHONEBOOK_URL, CONF_WEBHOOK_ID, DOMAIN
 from .phone import YealinkError, YealinkPhone
 from .phonebook import PhonebookError, fetch_phonebook
+
+_LOGGER = logging.getLogger(__name__)
 
 SCHEMA = vol.Schema(
     {
@@ -32,23 +35,29 @@ class YealinkConfigFlow(ConfigFlow, domain=DOMAIN):
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         errors: dict[str, str] = {}
+        placeholders = {"error": ""}
         if user_input is not None:
-            host = user_input[CONF_HOST].strip().removeprefix("http://").rstrip("/")
-            await self.async_set_unique_id(host)
+            # "192.168.1.50" -> auto (http, then https). "https://..." or "http://..." -> forced
+            entered = user_input[CONF_HOST].strip().rstrip("/")
+            bare = entered.removeprefix("http://").removeprefix("https://")
+            await self.async_set_unique_id(bare)
             self._abort_if_unique_id_configured()
 
-            phone = YealinkPhone(self.hass, "test", host, user_input[CONF_USERNAME], user_input[CONF_PASSWORD])
+            phone = YealinkPhone(self.hass, "test", entered, user_input[CONF_USERNAME], user_input[CONF_PASSWORD])
             try:
-                await phone.async_test()
+                base = await phone.async_test()
             except YealinkError as err:
+                _LOGGER.warning("Yealink connection test failed: %s", err)
                 errors["base"] = "invalid_auth" if "authentication" in str(err) else "cannot_connect"
+                placeholders["error"] = str(err)
             else:
                 return self.async_create_entry(
-                    title=f"Yealink {host}",
-                    data={**user_input, CONF_HOST: host, CONF_WEBHOOK_ID: webhook.async_generate_id()},
+                    title=f"Yealink {bare}",
+                    data={**user_input, CONF_HOST: base, CONF_WEBHOOK_ID: webhook.async_generate_id()},
                 )
 
-        return self.async_show_form(step_id="user", data_schema=SCHEMA, errors=errors)
+        return self.async_show_form(step_id="user", data_schema=SCHEMA, errors=errors,
+                                    description_placeholders=placeholders)
 
 
 class YealinkOptionsFlow(OptionsFlow):

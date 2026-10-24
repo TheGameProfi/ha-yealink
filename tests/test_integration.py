@@ -23,12 +23,12 @@ async def _setup(hass: HomeAssistant) -> MockConfigEntry:
 async def test_config_flow(hass: HomeAssistant) -> None:
     result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": config_entries.SOURCE_USER})
     assert result["type"] == "form"
-    with patch("custom_components.yealink.config_flow.YealinkPhone.async_test", return_value=None):
+    with patch("custom_components.yealink.config_flow.YealinkPhone.async_test", return_value="http://192.168.1.50"):
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"], {"host": "http://192.168.1.50/", "username": "admin", "password": "pw"}
         )
     assert result["type"] == "create_entry"
-    assert result["data"]["host"] == "192.168.1.50"
+    assert result["data"]["host"] == "http://192.168.1.50"
     assert result["data"][CONF_WEBHOOK_ID]
 
 
@@ -77,3 +77,70 @@ async def test_dial(hass: HomeAssistant, aioclient_mock) -> None:
     from homeassistant.exceptions import HomeAssistantError
     with pytest.raises(HomeAssistantError, match="allow list"):
         await hass.services.async_call(DOMAIN, "hangup", {}, blocking=True)
+
+
+async def test_config_flow_shows_real_error(hass: HomeAssistant, aioclient_mock) -> None:
+    import aiohttp
+    aioclient_mock.get("http://192.168.1.60/", exc=aiohttp.ClientConnectionError("No route to host"))
+    aioclient_mock.get("https://192.168.1.60/", exc=aiohttp.ClientConnectionError("No route to host"))
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": config_entries.SOURCE_USER})
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"host": "192.168.1.60", "username": "admin", "password": "pw"}
+    )
+    assert result["errors"] == {"base": "cannot_connect"}
+    assert "No route to host" in result["description_placeholders"]["error"]
+
+    aioclient_mock.clear_requests()
+    # different host, the first flow is still open and would abort as already_in_progress
+    aioclient_mock.get("http://192.168.1.61/", exc=TimeoutError())
+    aioclient_mock.get("https://192.168.1.61/", exc=TimeoutError())
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": config_entries.SOURCE_USER})
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"host": "192.168.1.61", "username": "admin", "password": "pw"}
+    )
+    assert "timeout" in result["description_placeholders"]["error"]
+
+
+async def test_https_host(hass: HomeAssistant, aioclient_mock) -> None:
+    aioclient_mock.get("https://192.168.1.70/", status=200)
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": config_entries.SOURCE_USER})
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"host": "https://192.168.1.70/", "username": "admin", "password": "pw"}
+    )
+    assert result["type"] == "create_entry"
+    assert result["data"]["host"] == "https://192.168.1.70"
+
+
+async def test_config_flow_accepts_login_redirect(hass: HomeAssistant, aioclient_mock) -> None:
+    # real T41S answers / with 302 -> login form, that must count as reachable
+    aioclient_mock.get("http://192.168.2.171/", status=302,
+                       headers={"Location": "/servlet?m=mod_listener&p=login&q=loginForm&jumpto=status"})
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": config_entries.SOURCE_USER})
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"host": "192.168.2.171", "username": "admin", "password": "pw"}
+    )
+    assert result["type"] == "create_entry"
+
+
+
+async def test_auto_falls_back_to_https(hass: HomeAssistant, aioclient_mock) -> None:
+    import aiohttp
+    aioclient_mock.get("http://192.168.1.80/", exc=aiohttp.ClientConnectionError("refused"))
+    aioclient_mock.get("https://192.168.1.80/", status=302)
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": config_entries.SOURCE_USER})
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"host": "192.168.1.80", "username": "admin", "password": "pw"}
+    )
+    assert result["type"] == "create_entry"
+    assert result["data"]["host"] == "https://192.168.1.80"
+    assert result["title"] == "Yealink 192.168.1.80"
+
+
+async def test_redirect_to_login_counts_as_reachable(hass: HomeAssistant, aioclient_mock) -> None:
+    aioclient_mock.get("http://192.168.1.90/", status=302, headers={"Location": "/servlet?m=mod_listener&p=login"})
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": config_entries.SOURCE_USER})
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"host": "192.168.1.90", "username": "admin", "password": "pw"}
+    )
+    assert result["type"] == "create_entry"
+    assert result["data"]["host"] == "http://192.168.1.90"

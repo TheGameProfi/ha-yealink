@@ -5,14 +5,14 @@
         "title": "Yealink Telefon",
         "description": "Adresse und Web-UI Login des Telefons.",
         "data": {
-          "host": "Host / IP",
+          "host": "Host / IP (https://... falls das Telefon HTTPS erzwingt)",
           "username": "Benutzername",
           "password": "Passwort"
         }
       }
     },
     "error": {
-      "cannot_connect": "Telefon nicht erreichbar.",
+      "cannot_connect": "Telefon nicht erreichbar: {error}",
       "invalid_auth": "Benutzername oder Passwort falsch."
     },
     "abort": {

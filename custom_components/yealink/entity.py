@@ -20,7 +20,7 @@ class YealinkEntity(Entity):
             identifiers={(DOMAIN, phone.entry_id)},
             name=f"Yealink {phone.host}",
             manufacturer="Yealink",
-            configuration_url=f"http://{phone.host}",
+            configuration_url=phone.base,
         )
 
     async def async_added_to_hass(self) -> None:

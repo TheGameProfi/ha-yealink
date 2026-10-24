@@ -5,14 +5,14 @@
         "title": "Yealink phone",
         "description": "Address and web UI login of the phone.",
         "data": {
-          "host": "Host / IP",
+          "host": "Host / IP (https://... if the phone forces HTTPS)",
           "username": "Username",
           "password": "Password"
         }
       }
     },
     "error": {
-      "cannot_connect": "Can't reach the phone.",
+      "cannot_connect": "Can't reach the phone: {error}",
       "invalid_auth": "Wrong username or password."
     },
     "abort": {
