@@ -73,3 +73,24 @@ async def test_options_flow_validates_service(hass: HomeAssistant) -> None:
         flow["flow_id"], {CONF_NOTIFY_SERVICE: "mobile_app_pixel", CONF_NOTIFY_MISSED: True})
     assert flow["type"] == "create_entry"
     assert flow["data"][CONF_NOTIFY_SERVICE] == "notify.mobile_app_pixel"
+
+
+async def test_notify_entity(hass: HomeAssistant, hass_client_no_auth) -> None:
+    """notify.mbg14_phone style entity -> notify.send_message, no tags."""
+    await async_setup_component(hass, "http", {})
+    sent = []
+    hass.services.async_register("notify", "send_message", lambda c: sent.append(dict(c.data)))
+    hass.states.async_set("notify.mbg14_phone", "unknown")
+    opts = {CONF_NOTIFY_SERVICE: "notify.mbg14_phone", CONF_NOTIFY_INCOMING: True, CONF_NOTIFY_MISSED: True}
+    entry = MockConfigEntry(domain=DOMAIN, data=DATA, options=opts, title="Y", unique_id="y")
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    await _events(hass, await hass_client_no_auth(), "incoming", "missed", "ended")
+    assert [s["title"] for s in sent] == ["📞 Incoming call", "Missed call"]
+    assert all(s["entity_id"] == "notify.mbg14_phone" and "data" not in s for s in sent)
+
+    flow = await hass.config_entries.options.async_init(entry.entry_id)
+    flow = await hass.config_entries.options.async_configure(
+        flow["flow_id"], {CONF_NOTIFY_SERVICE: "notify.mbg14_phone", CONF_NOTIFY_MISSED: True})
+    assert flow["type"] == "create_entry"

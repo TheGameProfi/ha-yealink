@@ -90,7 +90,9 @@ class YealinkOptionsFlow(OptionsFlow):
             if notify_service:
                 if not notify_service.startswith("notify."):
                     notify_service = f"notify.{notify_service}"
-                if not self.hass.services.has_service("notify", notify_service.split(".", 1)[1]):
+                is_entity = self.hass.states.get(notify_service) is not None
+                is_service = self.hass.services.has_service("notify", notify_service.split(".", 1)[1])
+                if not (is_entity or is_service):
                     errors[CONF_NOTIFY_SERVICE] = "unknown_notify"
             if not errors:
                 data = {}

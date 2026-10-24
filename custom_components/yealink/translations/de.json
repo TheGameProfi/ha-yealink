@@ -114,7 +114,7 @@
         "data": {
           "phonebook_url": "Telefonbuch URL",
           "ha_url": "Home Assistant URL für das Telefon (optional)",
-          "notify_service": "Benachrichtigungsdienst, z.B. notify.mobile_app_pixel",
+          "notify_service": "Benachrichtigung: Entität (notify.mein_handy) oder Dienst (notify.mobile_app_x)",
           "notify_incoming": "Benachrichtigen wenn es klingelt",
           "notify_missed": "Benachrichtigen bei verpasstem Anruf"
         }
@@ -125,7 +125,7 @@
       "invalid_phonebook": "Kein gültiges Yealink Telefonbuch.",
       "empty_phonebook": "Telefonbuch ist leer.",
       "invalid_url": "Muss mit http:// oder https:// anfangen.",
-      "unknown_notify": "Diesen Benachrichtigungsdienst gibt es nicht."
+      "unknown_notify": "Weder Notify-Entität noch -Dienst mit diesem Namen gefunden."
     }
   },
   "device_automation": {
