@@ -30,6 +30,7 @@ from .const import (
 )
 from .phone import YealinkError, YealinkPhone
 from .phonebook import PhonebookCoordinator, PhonebookError, find_contact
+from .notify import async_call_notification
 from .provision import action_urls, ha_base_url, provisioning_file
 
 _LOGGER = logging.getLogger(__name__)
@@ -140,6 +141,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: YealinkConfigEntry) -> b
                             event, request.remote, dict(request.query))
             return web.Response(status=400)
         phone.handle_event(event, request.query.get("from"), request.query.get("name"))
+        hass.async_create_task(
+            async_call_notification(hass, dict(entry.options), event, phone.state.last_caller)
+        )
         return web.Response(status=200)
 
     webhook_id = entry.data[CONF_WEBHOOK_ID]

@@ -44,6 +44,12 @@ Home Assistant's address is detected from the network route to the phone, not fr
 
 Manual setup is in the notification too, if you'd rather not use provisioning.
 
+## Notifications
+
+Integration options → set a notify service (e.g. `notify.mobile_app_pixel`) and tick **Notify while ringing** and/or **Notify on missed call**. No automation needed.
+
+With the companion app, the "ringing" notification is replaced by "missed call", or removed when you pick up, so they don't pile up.
+
 ## Automations
 
 Device triggers are built in: automation editor → **Device** → your Yealink → *Incoming call*, *Missed call*, *Call answered*, *Call ended*, *Outgoing call*. `trigger.event.data.caller` and `.number` hold who called.

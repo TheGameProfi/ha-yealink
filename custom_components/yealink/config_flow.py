@@ -10,7 +10,15 @@ from homeassistant.config_entries import ConfigEntry, ConfigFlow, ConfigFlowResu
 from homeassistant.core import callback
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
 
-from .const import CONF_HA_URL, CONF_PHONEBOOK_URL, CONF_WEBHOOK_ID, DOMAIN
+from .const import (
+    CONF_HA_URL,
+    CONF_NOTIFY_INCOMING,
+    CONF_NOTIFY_MISSED,
+    CONF_NOTIFY_SERVICE,
+    CONF_PHONEBOOK_URL,
+    CONF_WEBHOOK_ID,
+    DOMAIN,
+)
 from .phone import YealinkError, YealinkPhone
 from .phonebook import PhonebookError, fetch_phonebook
 
@@ -61,7 +69,7 @@ class YealinkConfigFlow(ConfigFlow, domain=DOMAIN):
 
 
 class YealinkOptionsFlow(OptionsFlow):
-    """Optional phonebook URL for dialing contacts by name."""
+    """Phonebook, HA address override, call notifications."""
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         errors: dict[str, str] = {}
@@ -78,12 +86,22 @@ class YealinkOptionsFlow(OptionsFlow):
                         errors["base"] = "empty_phonebook"
             if ha_url and not ha_url.startswith(("http://", "https://")):
                 errors[CONF_HA_URL] = "invalid_url"
+            notify_service = (user_input.get(CONF_NOTIFY_SERVICE) or "").strip()
+            if notify_service:
+                if not notify_service.startswith("notify."):
+                    notify_service = f"notify.{notify_service}"
+                if not self.hass.services.has_service("notify", notify_service.split(".", 1)[1]):
+                    errors[CONF_NOTIFY_SERVICE] = "unknown_notify"
             if not errors:
                 data = {}
                 if url:
                     data[CONF_PHONEBOOK_URL] = url
                 if ha_url:
                     data[CONF_HA_URL] = ha_url
+                if notify_service:
+                    data[CONF_NOTIFY_SERVICE] = notify_service
+                data[CONF_NOTIFY_INCOMING] = bool(user_input.get(CONF_NOTIFY_INCOMING))
+                data[CONF_NOTIFY_MISSED] = bool(user_input.get(CONF_NOTIFY_MISSED))
                 return self.async_create_entry(data=data)
 
         opts = self.config_entry.options
@@ -91,6 +109,10 @@ class YealinkOptionsFlow(OptionsFlow):
             {
                 vol.Optional(CONF_PHONEBOOK_URL, description={"suggested_value": opts.get(CONF_PHONEBOOK_URL, "")}): str,
                 vol.Optional(CONF_HA_URL, description={"suggested_value": opts.get(CONF_HA_URL, "")}): str,
+                vol.Optional(CONF_NOTIFY_SERVICE,
+                             description={"suggested_value": opts.get(CONF_NOTIFY_SERVICE, "")}): str,
+                vol.Optional(CONF_NOTIFY_INCOMING, default=opts.get(CONF_NOTIFY_INCOMING, False)): bool,
+                vol.Optional(CONF_NOTIFY_MISSED, default=opts.get(CONF_NOTIFY_MISSED, False)): bool,
             }
         )
         return self.async_show_form(step_id="init", data_schema=schema, errors=errors)
