@@ -1,0 +1,125 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Yealink Telefon",
+        "description": "Adresse und Web-UI Login des Telefons.",
+        "data": {
+          "host": "Host / IP",
+          "username": "Benutzername",
+          "password": "Passwort"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Telefon nicht erreichbar.",
+      "invalid_auth": "Benutzername oder Passwort falsch."
+    },
+    "abort": {
+      "already_configured": "Dieses Telefon ist schon eingerichtet."
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "ringing": {
+        "name": "Klingelt"
+      }
+    },
+    "sensor": {
+      "call_state": {
+        "name": "Anrufstatus",
+        "state": {
+          "idle": "Frei",
+          "ringing": "Klingelt",
+          "dialing": "Wählt",
+          "active": "Im Gespräch"
+        }
+      },
+      "last_caller": {
+        "name": "Letzter Anrufer"
+      },
+      "missed_calls": {
+        "name": "Verpasste Anrufe"
+      }
+    },
+    "select": {
+      "contact": {
+        "name": "Kontakt"
+      }
+    },
+    "button": {
+      "dial_selected": {
+        "name": "Kontakt anrufen"
+      },
+      "hangup": {
+        "name": "Auflegen"
+      }
+    }
+  },
+  "services": {
+    "dial": {
+      "name": "Wählen",
+      "description": "Telefon eine Nummer wählen lassen.",
+      "fields": {
+        "number": {
+          "name": "Nummer",
+          "description": "Zu wählende Nummer."
+        },
+        "config_entry_id": {
+          "name": "Telefon",
+          "description": "Nur nötig bei mehreren Telefonen."
+        }
+      }
+    },
+    "hangup": {
+      "name": "Auflegen",
+      "description": "Aktuellen Anruf beenden.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Telefon",
+          "description": "Nur nötig bei mehreren Telefonen."
+        }
+      }
+    },
+    "reset_missed": {
+      "name": "Verpasste zurücksetzen",
+      "description": "Zähler für verpasste Anrufe auf 0 setzen.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Telefon",
+          "description": "Nur nötig bei mehreren Telefonen."
+        }
+      }
+    },
+    "dial_contact": {
+      "name": "Kontakt anrufen",
+      "description": "Kontakt aus dem Telefonbuch per Name anrufen.",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "Name oder eindeutiger Teil davon."
+        },
+        "config_entry_id": {
+          "name": "Telefon",
+          "description": "Nur nötig bei mehreren Telefonen."
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Telefonbuch",
+        "description": "URL des Yealink XML Telefonbuchs, z.B. vom phonebook Service. Leer lassen zum Deaktivieren.",
+        "data": {
+          "phonebook_url": "Telefonbuch URL"
+        }
+      }
+    },
+    "error": {
+      "cannot_fetch": "Telefonbuch nicht erreichbar.",
+      "invalid_phonebook": "Kein gültiges Yealink Telefonbuch.",
+      "empty_phonebook": "Telefonbuch ist leer."
+    }
+  }
+}

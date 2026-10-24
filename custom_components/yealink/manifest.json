@@ -1,0 +1,12 @@
+{
+  "domain": "yealink",
+  "name": "Yealink Phone",
+  "codeowners": ["@TheGameProfi"],
+  "config_flow": true,
+  "dependencies": ["webhook"],
+  "documentation": "https://github.com/TheGameProfi/ha-yealink",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/TheGameProfi/ha-yealink/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}

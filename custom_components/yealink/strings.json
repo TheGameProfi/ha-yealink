@@ -1,0 +1,125 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Yealink phone",
+        "description": "Address and web UI login of the phone.",
+        "data": {
+          "host": "Host / IP",
+          "username": "Username",
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Can't reach the phone.",
+      "invalid_auth": "Wrong username or password."
+    },
+    "abort": {
+      "already_configured": "This phone is already set up."
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "ringing": {
+        "name": "Ringing"
+      }
+    },
+    "sensor": {
+      "call_state": {
+        "name": "Call state",
+        "state": {
+          "idle": "Idle",
+          "ringing": "Ringing",
+          "dialing": "Dialing",
+          "active": "In call"
+        }
+      },
+      "last_caller": {
+        "name": "Last caller"
+      },
+      "missed_calls": {
+        "name": "Missed calls"
+      }
+    },
+    "select": {
+      "contact": {
+        "name": "Contact"
+      }
+    },
+    "button": {
+      "dial_selected": {
+        "name": "Call contact"
+      },
+      "hangup": {
+        "name": "Hang up"
+      }
+    }
+  },
+  "services": {
+    "dial": {
+      "name": "Dial",
+      "description": "Let the phone dial a number.",
+      "fields": {
+        "number": {
+          "name": "Number",
+          "description": "Number to dial."
+        },
+        "config_entry_id": {
+          "name": "Phone",
+          "description": "Only needed with several phones."
+        }
+      }
+    },
+    "hangup": {
+      "name": "Hang up",
+      "description": "End the current call.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Phone",
+          "description": "Only needed with several phones."
+        }
+      }
+    },
+    "reset_missed": {
+      "name": "Reset missed calls",
+      "description": "Set the missed call counter back to 0.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Phone",
+          "description": "Only needed with several phones."
+        }
+      }
+    },
+    "dial_contact": {
+      "name": "Call contact",
+      "description": "Call a phonebook contact by name.",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "Name or a unique part of it."
+        },
+        "config_entry_id": {
+          "name": "Phone",
+          "description": "Only needed with several phones."
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Phonebook",
+        "description": "URL of the Yealink XML phonebook, e.g. from the phonebook service. Leave empty to disable.",
+        "data": {
+          "phonebook_url": "Phonebook URL"
+        }
+      }
+    },
+    "error": {
+      "cannot_fetch": "Can't fetch the phonebook.",
+      "invalid_phonebook": "Not a valid Yealink phonebook.",
+      "empty_phonebook": "Phonebook is empty."
+    }
+  }
+}

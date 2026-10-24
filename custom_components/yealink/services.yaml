@@ -1,0 +1,34 @@
+dial:
+  fields:
+    number:
+      required: true
+      example: "07611234567"
+      selector:
+        text:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: yealink
+hangup:
+  fields:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: yealink
+reset_missed:
+  fields:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: yealink
+dial_contact:
+  fields:
+    name:
+      required: true
+      example: "Mama"
+      selector:
+        text:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: yealink
