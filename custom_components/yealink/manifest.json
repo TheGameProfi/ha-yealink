@@ -6,6 +6,7 @@
   ],
   "config_flow": true,
   "dependencies": [
+    "http",
     "webhook"
   ],
   "documentation": "https://github.com/TheGameProfi/ha-yealink",
@@ -15,5 +16,5 @@
     "custom_components.yealink"
   ],
   "requirements": [],
-  "version": "0.1.1"
+  "version": "0.2.0"
 }

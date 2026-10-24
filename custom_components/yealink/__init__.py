@@ -10,8 +10,9 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME, Platform
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
+from homeassistant.components.http import HomeAssistantView
 from homeassistant.helpers import config_validation as cv
-from homeassistant.helpers.network import NoURLAvailableError, get_url
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.typing import ConfigType
 
 from .const import (
@@ -29,6 +30,7 @@ from .const import (
 )
 from .phone import YealinkError, YealinkPhone
 from .phonebook import PhonebookCoordinator, PhonebookError, find_contact
+from .provision import action_urls, ha_base_url, provisioning_file
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -50,8 +52,31 @@ def _phone_for(hass: HomeAssistant, call: ServiceCall) -> YealinkPhone:
     return entries[0].runtime_data
 
 
+class YealinkProvisionView(HomeAssistantView):
+    """Serves the auto-provisioning file. The phone can't do HA auth, the webhook id in the path is the secret."""
+
+    url = "/api/yealink_provision/{token}/{filename}"
+    name = "api:yealink_provision"
+    requires_auth = False
+
+    def __init__(self, hass: HomeAssistant) -> None:
+        self.hass = hass
+
+    async def get(self, request: web.Request, token: str, filename: str) -> web.Response:
+        if not filename.endswith(".cfg"):
+            return web.Response(status=404)
+        for entry in self.hass.config_entries.async_loaded_entries(DOMAIN):
+            if entry.data.get(CONF_WEBHOOK_ID) == token:
+                _LOGGER.debug("Phone %s fetched provisioning file %s", request.remote, filename)
+                body = provisioning_file(ha_base_url(self.hass, entry), entry)
+                return web.Response(text=body, content_type="text/plain")
+        return web.Response(status=404)
+
+
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    """Services are registered once, they pick the phone at call time."""
+    """Services + provisioning view are registered once, they pick the phone at call time."""
+    if getattr(hass, "http", None) is not None:
+        hass.http.register_view(YealinkProvisionView(hass))
 
     async def dial(call: ServiceCall) -> None:
         try:
@@ -125,6 +150,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: YealinkConfigEntry) -> b
     entry.async_on_unload(lambda: webhook.async_unregister(hass, webhook_id))
     _LOGGER.debug("Listening for phone events on /api/webhook/%s", webhook_id)
 
+    device = dr.async_get(hass).async_get_or_create(
+        config_entry_id=entry.entry_id,
+        identifiers={(DOMAIN, entry.entry_id)},
+        manufacturer="Yealink",
+        name=f"Yealink {phone.base.split('://')[-1]}",
+    )
+    phone.device_id = device.id
+
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     _notify_action_urls(hass, entry)
     return True
@@ -139,27 +172,23 @@ async def async_unload_entry(hass: HomeAssistant, entry: YealinkConfigEntry) -> 
 
 
 def _notify_action_urls(hass: HomeAssistant, entry: YealinkConfigEntry) -> None:
-    """Show the URLs to paste into the phone, once per entry."""
-    if entry.data.get("_urls_shown"):
+    """Show how to point the phone at HA. Shown again whenever the detected HA address changes."""
+    base = ha_base_url(hass, entry)
+    if entry.data.get("_urls_shown_for") == base:
         return
-    try:
-        base = get_url(hass, allow_external=False, prefer_external=False)
-    except NoURLAvailableError:
-        base = "http://HOME_ASSISTANT_IP:8123"
-    hook = f"{base}/api/webhook/{entry.data[CONF_WEBHOOK_ID]}"
-    rows = {
-        "Incoming Call": f"{hook}?event=incoming&from=$remote&name=$display_remote",
-        "Outgoing Call": f"{hook}?event=outgoing&from=$remote&name=$display_remote",
-        "Established": f"{hook}?event=established",
-        "Terminated": f"{hook}?event=ended",
-        "Missed Call": f"{hook}?event=missed&from=$remote&name=$display_remote",
-    }
-    lines = "\n".join(f"- **{k}:** `{v}`" for k, v in rows.items())
+    token = entry.data[CONF_WEBHOOK_ID]
+    provision = f"{base}/api/yealink_provision/{token}/"
+    manual = "\n".join(f"- {k}: `{v}`" for k, v in action_urls(base, token).items())
     persistent_notification.async_create(
         hass,
-        "Paste these into the phone under **Features → Action URL**, and add this Home Assistant's IP "
-        f"to **Features → Remote Control → Action URI allow IP list**.\n\n{lines}",
+        "**Automatic (recommended):** on the phone go to **Settings → Auto Provision**, set\n\n"
+        f"Server URL: `{provision}`\n\n"
+        "then press **Autoprovision Now**. The phone sets all Action URLs and allows Home Assistant "
+        "to dial on its own.\n\n"
+        f"Detected Home Assistant address: `{base}`. Wrong? Set it in the integration options.\n\n"
+        f"<details><summary>Manual setup instead</summary>\n\nFeatures → Action URL:\n{manual}\n\n"
+        f"Features → Remote Control → Action URI allow IP list: `{base.split('://')[-1].split(':')[0]}`\n</details>",
         title=f"Yealink setup: {entry.title}",
         notification_id=f"{DOMAIN}_{entry.entry_id}_urls",
     )
-    hass.config_entries.async_update_entry(entry, data={**entry.data, "_urls_shown": True})
+    hass.config_entries.async_update_entry(entry, data={**entry.data, "_urls_shown_for": base})

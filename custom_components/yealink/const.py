@@ -22,3 +22,4 @@ PHONE_EVENTS = ("incoming", "outgoing", "established", "ended", "missed")
 CONF_PHONEBOOK_URL = "phonebook_url"
 SERVICE_DIAL_CONTACT = "dial_contact"
 ATTR_NAME = "name"
+CONF_HA_URL = "ha_url"

@@ -33,6 +33,7 @@ class YealinkPhone:
         self._store: Store[dict] = Store(hass, STORAGE_VERSION, f"{DOMAIN}.{entry_id}")
         self._listeners: list[Callable[[], None]] = []
         self._session: aiohttp.ClientSession | None = None
+        self.device_id: str | None = None
         self.phonebook = None  # PhonebookCoordinator, set when a phonebook URL is configured
         self.selected_contact: str | None = None
 
@@ -48,6 +49,7 @@ class YealinkPhone:
             EVENT_CALL,
             {
                 "config_entry_id": self.entry_id,
+                "device_id": self.device_id,
                 "event": event,
                 "number": self.state.last_number if event in ("incoming", "missed") else None,
                 "caller": self.state.last_caller if event in ("incoming", "missed") else None,

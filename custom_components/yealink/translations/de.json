@@ -110,16 +110,27 @@
     "step": {
       "init": {
         "title": "Telefonbuch",
-        "description": "URL des Yealink XML Telefonbuchs, z.B. vom phonebook Service. Leer lassen zum Deaktivieren.",
+        "description": "Telefonbuch: URL des Yealink XML Telefonbuchs, leer = aus.\n\nHome Assistant URL: nur setzen, wenn die automatisch erkannte Adresse falsch ist, z.B. http://192.168.2.30:8123",
         "data": {
-          "phonebook_url": "Telefonbuch URL"
+          "phonebook_url": "Telefonbuch URL",
+          "ha_url": "Home Assistant URL für das Telefon (optional)"
         }
       }
     },
     "error": {
       "cannot_fetch": "Telefonbuch nicht erreichbar.",
       "invalid_phonebook": "Kein gültiges Yealink Telefonbuch.",
-      "empty_phonebook": "Telefonbuch ist leer."
+      "empty_phonebook": "Telefonbuch ist leer.",
+      "invalid_url": "Muss mit http:// oder https:// anfangen."
+    }
+  },
+  "device_automation": {
+    "trigger_type": {
+      "incoming": "Eingehender Anruf",
+      "outgoing": "Ausgehender Anruf",
+      "established": "Gespräch angenommen",
+      "ended": "Gespräch beendet",
+      "missed": "Verpasster Anruf"
     }
   }
 }

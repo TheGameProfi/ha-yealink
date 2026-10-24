@@ -10,7 +10,7 @@ from homeassistant.config_entries import ConfigEntry, ConfigFlow, ConfigFlowResu
 from homeassistant.core import callback
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
 
-from .const import CONF_PHONEBOOK_URL, CONF_WEBHOOK_ID, DOMAIN
+from .const import CONF_HA_URL, CONF_PHONEBOOK_URL, CONF_WEBHOOK_ID, DOMAIN
 from .phone import YealinkError, YealinkPhone
 from .phonebook import PhonebookError, fetch_phonebook
 
@@ -67,6 +67,7 @@ class YealinkOptionsFlow(OptionsFlow):
         errors: dict[str, str] = {}
         if user_input is not None:
             url = (user_input.get(CONF_PHONEBOOK_URL) or "").strip()
+            ha_url = (user_input.get(CONF_HA_URL) or "").strip().rstrip("/")
             if url:
                 try:
                     contacts = await fetch_phonebook(self.hass, url)
@@ -75,9 +76,21 @@ class YealinkOptionsFlow(OptionsFlow):
                 else:
                     if not contacts:
                         errors["base"] = "empty_phonebook"
+            if ha_url and not ha_url.startswith(("http://", "https://")):
+                errors[CONF_HA_URL] = "invalid_url"
             if not errors:
-                return self.async_create_entry(data={CONF_PHONEBOOK_URL: url} if url else {})
+                data = {}
+                if url:
+                    data[CONF_PHONEBOOK_URL] = url
+                if ha_url:
+                    data[CONF_HA_URL] = ha_url
+                return self.async_create_entry(data=data)
 
-        current = self.config_entry.options.get(CONF_PHONEBOOK_URL, "")
-        schema = vol.Schema({vol.Optional(CONF_PHONEBOOK_URL, description={"suggested_value": current}): str})
+        opts = self.config_entry.options
+        schema = vol.Schema(
+            {
+                vol.Optional(CONF_PHONEBOOK_URL, description={"suggested_value": opts.get(CONF_PHONEBOOK_URL, "")}): str,
+                vol.Optional(CONF_HA_URL, description={"suggested_value": opts.get(CONF_HA_URL, "")}): str,
+            }
+        )
         return self.async_show_form(step_id="init", data_schema=schema, errors=errors)

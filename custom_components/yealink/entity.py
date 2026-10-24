@@ -18,7 +18,7 @@ class YealinkEntity(Entity):
         self._attr_translation_key = key
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, phone.entry_id)},
-            name=f"Yealink {phone.host}",
+            name=f"Yealink {phone.base.split('://')[-1]}",
             manufacturer="Yealink",
             configuration_url=phone.base,
         )

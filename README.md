@@ -33,9 +33,20 @@ HACS → Custom repositories → this repo, type Integration. Or copy `custom_co
 
 ## Phone setup
 
-After adding the integration, a notification shows the exact Action URLs. Paste them into the phone under **Features → Action URL**, and add Home Assistant's IP to **Features → Remote Control → Action URI allow IP list**.
+After adding the integration, a notification shows a provisioning URL. On the phone:
 
-If the notification shows a hostname the phone can't resolve (like `homeassistant.local`), replace it with the IP.
+1. **Settings → Auto Provision → Server URL**: paste that URL
+2. press **Autoprovision Now**
+
+The phone pulls a config file from Home Assistant that sets all Action URLs and allows Home Assistant to dial. No copying of webhook IDs.
+
+Home Assistant's address is detected from the network route to the phone, not from HA's network settings. If it's still wrong (e.g. reverse proxy, odd Docker networking), set **Home Assistant URL** in the integration options. The notification pops up again whenever the detected address changes.
+
+Manual setup is in the notification too, if you'd rather not use provisioning.
+
+## Automations
+
+Device triggers are built in: automation editor → **Device** → your Yealink → *Incoming call*, *Missed call*, *Call answered*, *Call ended*, *Outgoing call*. `trigger.event.data.caller` and `.number` hold who called.
 
 ## Example
 
