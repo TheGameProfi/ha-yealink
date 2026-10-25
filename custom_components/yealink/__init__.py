@@ -28,6 +28,7 @@ from .const import (
     SERVICE_HANGUP,
     SERVICE_RESET_MISSED,
 )
+from .card import async_setup_card
 from .phone import YealinkError, YealinkPhone
 from .phonebook import PhonebookCoordinator, PhonebookError, find_contact
 from .notify import async_call_notification
@@ -78,6 +79,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Services + provisioning view are registered once, they pick the phone at call time."""
     if getattr(hass, "http", None) is not None:
         hass.http.register_view(YealinkProvisionView(hass))
+    await async_setup_card(hass)
 
     async def dial(call: ServiceCall) -> None:
         try:

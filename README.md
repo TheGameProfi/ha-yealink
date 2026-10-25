@@ -27,6 +27,19 @@ Event `yealink_call` is fired on every phone event (`event`, `caller`, `number`,
 
 Integration options → Phonebook URL: the same Yealink XML URL the phone uses (e.g. from the CardDAV→XML phonebook service). Refreshes every 15 min. Same name with several numbers shows up as `Mama`, `Mama (2)`, ...
 
+### Contacts card
+
+Ships with the integration, nothing to add under resources. Dashboard → Add card → **Yealink contacts**, or:
+
+```yaml
+type: custom:yealink-contacts-card
+title: Contacts          # optional
+config_entry_id: abc123  # optional, only with several phones
+max_height: 420px        # optional, list scrolls beyond this
+```
+
+Search by name (start of any word, accents ignored: `max web` finds *Dr. Max Peter Weber*) or by part of a number. One row per person, a button per number (`Mobil`, `Privat`, ... when the phonebook names them like `Anna Müller (Mobil)`); tap to dial, Enter dials when only one number is left. A bar with a hang-up button shows while a call is ringing or active.
+
 ## Install
 
 HACS → Custom repositories → this repo, type Integration. Or copy `custom_components/yealink` into your HA config folder. Restart, then Settings → Devices & Services → Add → Yealink.

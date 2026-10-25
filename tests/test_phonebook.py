@@ -100,3 +100,30 @@ async def test_options_flow(hass: HomeAssistant, aioclient_mock) -> None:
     await hass.async_block_till_done()
     # reloaded with phonebook -> select exists now
     assert _entity(hass, "select", "contact")
+
+
+def test_split_kind():
+    from custom_components.yealink.card import split_kind
+    assert split_kind("Anna Müller (Mobil)") == ("Anna Müller", "Mobil")
+    assert split_kind("Max (Arbeit Mobil)") == ("Max", "Arbeit Mobil")
+    assert split_kind("Oma") == ("Oma", "")
+    assert split_kind("(Mobil)") == ("(Mobil)", "")
+
+
+async def test_card_ws_and_js(hass: HomeAssistant, aioclient_mock, hass_ws_client, hass_client) -> None:
+    entry = await _setup(hass, aioclient_mock)
+    ws = await hass_ws_client(hass)
+    await ws.send_json({"id": 1, "type": "yealink/contacts"})
+    msg = await ws.receive_json()
+    assert msg["success"]
+    (phone,) = msg["result"]["phones"]
+    assert phone["entry_id"] == entry.entry_id and phone["phonebook"]
+    assert phone["contacts"][:3] == [
+        {"name": "Björn & Co", "kind": "", "number": "+4917077"},
+        {"name": "Mama", "kind": "", "number": "+491701234567"},
+        {"name": "Mama", "kind": "", "number": "+49761123456"},
+    ]
+
+    client = await hass_client()
+    resp = await client.get("/yealink_static/yealink-contacts-card.js")
+    assert resp.status == 200 and "yealink-contacts-card" in await resp.text()
