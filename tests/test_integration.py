@@ -75,7 +75,8 @@ async def test_dial(hass: HomeAssistant, aioclient_mock) -> None:
     aioclient_mock.get("http://192.168.1.50/servlet?key=CALLEND", status=403)
     import pytest
     from homeassistant.exceptions import HomeAssistantError
-    with pytest.raises(HomeAssistantError, match="allow list"):
+    with patch("custom_components.yealink.phone.local_ip_towards", return_value="192.168.1.7"), \
+            pytest.raises(HomeAssistantError, match="add 192.168.1.7 to its Action URI allow list"):
         await hass.services.async_call(DOMAIN, "hangup", {}, blocking=True)
 
 

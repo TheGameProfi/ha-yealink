@@ -60,9 +60,11 @@ async def test_provisioning_file(hass: HomeAssistant, hass_client_no_auth) -> No
 async def test_ha_url_override(hass: HomeAssistant, hass_client_no_auth) -> None:
     await _setup(hass, {CONF_HA_URL: "http://10.0.0.5:8123/"})
     client = await hass_client_no_auth()
-    body = await (await client.get("/api/yealink_provision/hook123/x.cfg")).text()
+    with patch("custom_components.yealink.provision.local_ip_towards", return_value="192.168.2.30"):
+        body = await (await client.get("/api/yealink_provision/hook123/x.cfg")).text()
     assert "http://10.0.0.5:8123/api/webhook/hook123" in body
-    assert "features.action_uri_limit_ip = 10.0.0.5" in body
+    # the phone checks where requests come from (route), not the URL it calls back
+    assert "features.action_uri_limit_ip = 192.168.2.30,10.0.0.5" in body
 
 
 async def test_device_triggers(hass: HomeAssistant, hass_client_no_auth) -> None:

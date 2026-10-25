@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable
-from urllib.parse import quote
+from urllib.parse import quote, urlparse
 
 import aiohttp
 from homeassistant.core import HomeAssistant, callback
@@ -13,6 +13,7 @@ from homeassistant.util import dt as dt_util
 
 from .call import PhoneState
 from .const import CALL_LOG_SIZE, DOMAIN, EVENT_CALL, STORAGE_VERSION
+from .provision import local_ip_towards
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -100,7 +101,11 @@ class YealinkPhone:
         if status == 401:
             raise YealinkError("authentication failed")
         if status == 403:
-            raise YealinkError("forbidden, add Home Assistant's IP to the phone's Action URI allow list")
+            ip = await self.hass.async_add_executor_job(local_ip_towards, urlparse(self.base).hostname)
+            raise YealinkError(
+                f"phone refused: add {ip or 'Home Assistant’s IP'} to its Action URI allow list "
+                "(web UI → Features → Remote Control), or run Autoprovision Now again"
+            )
         if 300 <= status < 400:
             raise YealinkError("phone redirected to its login page, check username/password and the Action URI allow list")
         if status >= 400:
